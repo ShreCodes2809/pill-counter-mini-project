@@ -4,6 +4,19 @@
 using namespace cv;
 using namespace std;
 
+int countObjects(const Mat& markers) {
+    set<int> uniqueLabels;
+    for (int r = 0; r < markers.rows; r++) {
+        for (int c = 0; c < markers.cols; c++) {
+            int val = markers.at<int>(r, c);
+            if (val > 1) { // exclude background (1) and boundaries (-1)
+                uniqueLabels.insert(val);
+            }
+        }
+    }
+    return (int)uniqueLabels.size();
+}
+
 int main() {
     //loading both the images
     Mat red_pill_img = imread("images/red-pills-white-bg.jpg");
@@ -38,7 +51,7 @@ int main() {
 
     // setting the max threshold values
     double rp_thresh_val = 0.55 * rp_maxVal;
-    double bp_thresh_val = 0.45 * bp_maxVal;
+    double bp_thresh_val = 0.41 * bp_maxVal;
 
     // Foreground (sure objects)
     Mat rp_sure_fg, bp_sure_fg;
@@ -75,14 +88,8 @@ int main() {
     watershed(blue_pill_img, bp_markers);
 
     // Re-map regions & count
-    int num_red_pills = 0;
-    for (int i = 2; i <= rp_markers.rows * rp_markers.cols; i++) { 
-        if (countNonZero(rp_markers == i) > 0) num_red_pills++;
-    }
-    int num_blue_pills = 0;
-    for (int i = 2; i <= bp_markers.rows * bp_markers.cols; i++) {
-        if (countNonZero(bp_markers == i) > 0) num_blue_pills++;
-    }
+    int num_red_pills = countObjects(rp_markers);
+    int num_blue_pills = countObjects(bp_markers);
     
     cout << "Number of red pills detected: " << num_red_pills << endl;
     cout << "Number of blue pills detected: " << num_blue_pills << endl;
