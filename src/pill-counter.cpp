@@ -28,9 +28,15 @@ int main() {
     cvtColor(blue_pill_img, bp_gray, COLOR_BGR2GRAY);
     GaussianBlur(bp_gray, bp_gray, Size(3, 3), 0);
 
+    imshow("Denoised image for red pills", rp_gray);
+    imshow("Denoised image for blue pills", bp_gray);
+
     // Binary mask (pills as white)
     threshold(rp_gray, rp_th, 0, 255, THRESH_BINARY_INV | THRESH_OTSU);
     threshold(bp_gray, bp_th, 0, 255, THRESH_BINARY_INV | THRESH_OTSU);
+
+    imshow("Binary mask for red pills", rp_th);
+    imshow("Binary mask for blue pills", bp_th);
 
     // Morphology to remove noise
     Mat kernel = Mat::ones(3, 3, CV_8U);
@@ -43,6 +49,9 @@ int main() {
     normalize(rp_dist, rp_dist, 0, 1.0, NORM_MINMAX);
     distanceTransform(bp_th, bp_dist, DIST_L2, 5);
     normalize(bp_dist, bp_dist, 0, 1.0, NORM_MINMAX);
+
+    imshow("Distance transformed image for red pills", rp_dist);
+    imshow("Distance transformed image for blue pills", bp_dist);
 
     // Adaptive threshold based on max dist value
     double rp_maxVal, bp_maxVal;
@@ -60,15 +69,24 @@ int main() {
     threshold(bp_dist, bp_sure_fg, bp_thresh_val, 255, 0);
     bp_sure_fg.convertTo(bp_sure_fg, CV_8U);
 
+    imshow("Foreground image for red pills", rp_sure_fg);
+    imshow("Foreground image for blue pills", bp_sure_fg);
+
     // Background
     Mat rp_sure_bg, bp_sure_bg;
     dilate(rp_th, rp_sure_bg, kernel, Point(-1,-1), 3);
     dilate(bp_th, bp_sure_bg, kernel, Point(-1,-1), 3);
 
+    imshow("Background image for red pills", rp_sure_bg);
+    imshow("Background image for blue pills", bp_sure_bg);
+
     // Unknown region
     Mat rp_unknown, bp_unknown;
     subtract(rp_sure_bg, rp_sure_fg, rp_unknown);
     subtract(bp_sure_bg, bp_sure_fg, bp_unknown);
+
+    imshow("Unknown region for red pills", rp_unknown);
+    imshow("Unknown region for blue pills", bp_unknown);
 
     // Connected components on sure_fg
     Mat rp_markers, bp_markers;
@@ -96,9 +114,10 @@ int main() {
     // Optional: Draw boundaries
     Mat rp_result = red_pill_img.clone();
     rp_result.setTo(Scalar(0,0,255), rp_markers == -1); // boundaries in red
-    imshow("Result for red pills", rp_result);
     Mat bp_result = blue_pill_img.clone();
     bp_result.setTo(Scalar(0,0,255), bp_markers == -1); // boundaries in red
+
+    imshow("Result for red pills", rp_result);
     imshow("Result for blue pills", bp_result);
     
     waitKey(0);
