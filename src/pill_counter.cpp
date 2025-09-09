@@ -78,8 +78,7 @@ namespace pilseg {
         return out;
     }
 
-    // ---------- Chroma segmentation: Otsu or K-means(2) ----------
-
+    //function for creation of chroma mask
     cv::Mat chromaMask(const cv::Mat& bgr,
                 const std::string& mode) // "otsu" | "kmeans"
     {
@@ -121,34 +120,6 @@ namespace pilseg {
         cv::morphologyEx(out.fused, out.fused, cv::MORPH_CLOSE,
                         cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(3,3)));
         return out;
-    }
-
-    // ---------- (Optional) convert fused mask to watershed seeds ----------
-    cv::Mat watershedSeeds(const Mat& fusedMask) {
-        // Sure-foreground via distance transform percentile
-        cv::Mat bin; cv::threshold(fusedMask, bin, 0, 255, cv::THRESH_BINARY);
-        cv::Mat dt; cv::distanceTransform(bin, dt, cv::DIST_L2, 5);
-
-        std::vector<float> v; v.reserve((size_t)dt.total());
-        for (int r = 0; r < dt.rows; ++r) {
-            const float* p = dt.ptr<float>(r);
-            const uchar* m = bin.ptr<uchar>(r);
-            for (int c = 0; c < dt.cols; ++c) if (m[c]) v.push_back(p[c]);
-        }
-        float thr = 0.f;
-        if (!v.empty()) {
-            size_t k = (size_t)std::round(0.65 * (v.size() - 1));
-            std::nth_element(v.begin(), v.begin()+k, v.end());
-            thr = v[k];
-        }
-        cv::Mat sureFg; cv::threshold(dt, sureFg, thr, 255, cv::THRESH_BINARY); sureFg.convertTo(sureFg, CV_8U);
-        cv::Mat sureBg; cv::dilate(bin, sureBg, cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(5,5)), cv::Point(-1,-1), 2);
-        cv::Mat unknown; cv::subtract(sureBg, sureFg, unknown);
-
-        cv::Mat markers; cv::connectedComponents(sureFg, markers);
-        markers += 1;
-        markers.setTo(0, unknown > 0);
-    return markers;
     }
 
     cv::Mat makeSeedsFromFused(const cv::Mat& fused, double fgPercentile) {
